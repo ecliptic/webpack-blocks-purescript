@@ -5,7 +5,6 @@
  */
 const defaultOpts = {
   psc: 'psa',
-  src: ['bower_components/purescript-*/src/**/*.purs', 'src/**/*.purs'],
   warnings: false,
 }
 
