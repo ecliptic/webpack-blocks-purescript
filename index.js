@@ -9,7 +9,7 @@ const defaultOpts = {
 }
 
 export default function purescript (options) {
-  const opts = {...defaultOpts, options}
+  const opts = {...defaultOpts, ...options}
 
   const setter = (context) => ({
     resolve: {
