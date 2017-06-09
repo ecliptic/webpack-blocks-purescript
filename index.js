@@ -62,7 +62,7 @@ export default function purescript (options: ?Options) {
   )
 }
 
-function preConfig (context: Object, {merge}: Helpers): Config => Config {
+function preConfig (context: Object): Config => Config {
   return config => {
     const registeredTypes = context.fileType.all()
 
