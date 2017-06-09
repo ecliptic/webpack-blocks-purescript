@@ -1,15 +1,71 @@
-// @flow
+import {createConfig, match} from '@webpack-blocks/core'
 import purescript from '../index'
 
-test('purescript()', () => {
-  const block = purescript({template: 'assets/index.html'})
-  const context = {fileType: () => /\.purs$/}
-  const helpers = {
-    merge: configSnippet => prevConfig => configSnippet,
-  }
+test('PureScript default options work', () => {
+  const config = createConfig({}, [purescript()])
 
-  block.pre(context, helpers)
-  const result = block(context, helpers)({})
+  expect(config.module.rules).toEqual([
+    {
+      test: /\.purs$/,
+      exclude: /node_modules/,
+      use: [
+        {
+          loader: 'purs-loader',
+          options: {
+            psc: 'psa',
+            warnings: true,
+            watch: true,
+          },
+        },
+      ],
+    },
+  ])
+})
 
-  expect(result).toMatchSnapshot()
+test('PureScript default production options work', () => {
+  const config = createConfig({}, [purescript({}, true)])
+
+  expect(config.module.rules).toEqual([
+    {
+      test: /\.purs$/,
+      exclude: /node_modules/,
+      use: [
+        {
+          loader: 'purs-loader',
+          options: {
+            psc: 'psa',
+            warnings: false,
+          },
+        },
+      ],
+    },
+  ])
+})
+
+test('PureScript options and custom match() work', () => {
+  const config = createConfig({}, [
+    match('*.pursfile', {exclude: 'foo/'}, [
+      purescript({
+        pscPackage: true,
+      }),
+    ]),
+  ])
+
+  expect(config.module.rules).toEqual([
+    {
+      test: /^.*\.pursfile$/,
+      exclude: 'foo/',
+      use: [
+        {
+          loader: 'purs-loader',
+          options: {
+            psc: 'psa',
+            warnings: true,
+            watch: true,
+            pscPackage: true,
+          },
+        },
+      ],
+    },
+  ])
 })

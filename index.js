@@ -34,42 +34,65 @@ export type Options = {
   src?: Array<string>
 }
 
-const defaultOpts = {
-  psc: 'psa',
-  warnings: false,
+const productionDefaultConfig = {
+  options: {
+    psc: 'psa',
+    warnings: false,
+  },
 }
 
-export default function purescript (options: ?Options) {
-  const opts = {...defaultOpts, ...options}
-  return Object.assign(
-    (context, {merge}) =>
-      merge({
-        resolve: {
-          extensions: ['.purs'],
-        },
-        module: {
-          rules: [
-            {
-              test: context.fileType('application/x-purescript'),
-              exclude: opts.exclude || /node_modules/,
-              loader: 'purs-loader',
-              options: opts,
-            },
-          ],
-        },
-      }),
-    {pre: preConfig}
-  )
+const developmentDefaultConfig = {
+  options: {
+    psc: 'psa',
+    warnings: true,
+    watch: true,
+  },
 }
 
-function preConfig (context: Object): Config => Config {
-  return config => {
-    const registeredTypes = context.fileType.all()
+export default function purescript (
+  options: Options = {},
+  isProduction: ?boolean
+) {
+  isProduction = typeof isProduction === 'boolean'
+    ? isProduction
+    : process.env.NODE_ENV === 'production'
 
-    if (!('application/x-purescript' in registeredTypes)) {
-      context.fileType.add('application/x-purescript', /\.purs$/)
-    }
+  const main = context => prevConfig => {
+    context.purescript = Object.assign(
+      {},
+      context.purescript,
+      isProduction ? productionDefaultConfig : developmentDefaultConfig
+    )
+    context.purescript.options = Object.assign(
+      context.purescript.options,
+      options
+    )
 
-    return config
+    // Return unchanged config (configuration will be created by the post hook)
+    return prevConfig
   }
+
+  return Object.assign(main, {post: postConfig})
+}
+
+function postConfig (context, util) {
+  const {options} = context.purescript
+
+  const loaderConfig = Object.assign(
+    {
+      test: /\.purs$/,
+      exclude: options.exclude || /node_modules/,
+      use: [{loader: 'purs-loader', options}],
+    },
+    context.match
+  )
+
+  return util.merge({
+    resolve: {
+      extensions: ['.purs'],
+    },
+    module: {
+      rules: [loaderConfig],
+    },
+  })
 }
